@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Claim · Acme Expense</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <header></header>
+  <main>
+    <h1 id="title"></h1>
+    <div class="card">
+      <dl id="details" data-testid="claim-details"></dl>
+      <div class="actions" id="actions" hidden>
+        <button class="primary" id="approve" data-testid="approve">Approve</button>
+        <button class="danger" id="return" data-testid="return">Return to employee</button>
+      </div>
+    </div>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    const user = requireUser();
+    renderHeader(user.role === 'approver' ? 'approvals' : 'claims');
+    const id = new URLSearchParams(location.search).get('id');
+    const claim = allClaims().find((c) => c.id === id);
+    document.getElementById('title').textContent = claim ? claim.title : 'Claim not found';
+    if (claim) {
+      document.getElementById('details').innerHTML = `
+        <dt>Status</dt><dd>${badge(claim.status)}</dd>
+        <dt>Amount</dt><dd>${yen(claim.amount)}</dd>
+        <dt>Date</dt><dd>${claim.date}</dd>
+        <dt>Category</dt><dd>${CATEGORIES[claim.category]}</dd>
+        <dt>Employee</dt><dd>${claim.owner}</dd>
+        ${claim.note ? `<dt>Approver note</dt><dd>${claim.note}</dd>` : ''}`;
+      // Only approvers act, and only on submitted claims; a returned claim goes back to the employee.
+      if (user.role === 'approver' && claim.status === 'submitted') {
+        document.getElementById('actions').hidden = false;
+        document.getElementById('approve').addEventListener('click', () => { decide(id, 'approved'); location.reload(); });
+        document.getElementById('return').addEventListener('click', () => {
+          const note = prompt('Why is this claim returned?');
+          if (note) { decide(id, 'returned', note); location.reload(); }
+        });
+      }
+    }
+  </script>
+</body>
+</html>

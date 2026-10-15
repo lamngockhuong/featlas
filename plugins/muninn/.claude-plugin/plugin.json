@@ -1,0 +1,10 @@
+{
+  "name": "muninn",
+  "version": "0.1.0",
+  "description": "Generate a product atlas (features, screens with screenshots and hotspots, flows, modules) for the muninn binary to serve and review.",
+  "author": { "name": "Lam Ngoc Khuong" },
+  "homepage": "https://github.com/lamngockhuong/muninn",
+  "repository": "https://github.com/lamngockhuong/muninn",
+  "license": "MIT",
+  "keywords": ["onboarding", "documentation", "screenshots", "product"]
+}

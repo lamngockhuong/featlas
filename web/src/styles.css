@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-white text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-sky-500;
+  }
+}
+
+@layer components {
+  .link {
+    @apply text-sky-700 hover:underline dark:text-sky-400;
+  }
+  .input {
+    @apply rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800;
+  }
+  .btn-primary {
+    @apply border-slate-900 bg-slate-900 text-white hover:bg-slate-700 dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300;
+  }
+  .btn-approve {
+    @apply border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500;
+  }
+  .icon-btn {
+    @apply inline-flex size-9 shrink-0 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800;
+  }
+  .table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .table th {
+    @apply border-b border-slate-200 px-2 py-1.5 font-medium text-slate-500 dark:border-slate-700;
+  }
+  .table td {
+    @apply border-b border-slate-100 px-2 py-1.5 align-top dark:border-slate-800;
+  }
+  .state-bar-draft {
+    @apply bg-slate-400;
+  }
+  .state-bar-changes_requested {
+    @apply bg-red-500;
+  }
+  .state-bar-modified {
+    @apply bg-violet-500;
+  }
+  .state-bar-outdated {
+    @apply bg-amber-500;
+  }
+  .state-bar-approved {
+    @apply bg-emerald-500;
+  }
+
+  /* Rendered Markdown bodies. */
+  .md {
+    @apply max-w-3xl text-[15px] leading-relaxed text-slate-800 dark:text-slate-200;
+  }
+  .md h1,
+  .md h2 {
+    @apply mt-6 mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100;
+  }
+  .md h3,
+  .md h4 {
+    @apply mt-4 mb-1 font-semibold;
+  }
+  .md p {
+    @apply my-2;
+  }
+  .md ul {
+    @apply my-2 list-disc pl-6;
+  }
+  .md ol {
+    @apply my-2 list-decimal pl-6;
+  }
+  .md li {
+    @apply my-0.5;
+  }
+  .md a {
+    @apply text-sky-700 underline dark:text-sky-400;
+  }
+  .md code {
+    @apply rounded bg-slate-100 px-1 py-0.5 text-[0.9em] dark:bg-slate-800;
+  }
+  .md .md-pre {
+    @apply my-3 overflow-x-auto rounded-md bg-slate-100 p-3 text-sm dark:bg-slate-900;
+  }
+  .md .md-pre code {
+    @apply bg-transparent p-0;
+  }
+  .md table {
+    @apply my-3 w-full border-collapse text-sm;
+  }
+  .md th,
+  .md td {
+    @apply border border-slate-200 px-2 py-1 dark:border-slate-700;
+  }
+  .md blockquote {
+    @apply my-3 border-l-4 border-slate-300 pl-3 text-slate-600 dark:border-slate-600 dark:text-slate-400;
+  }
+}

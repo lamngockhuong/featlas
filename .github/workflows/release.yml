@@ -1,0 +1,45 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Plugin version matches the tag
+        # Plugin users only get updates when this version changes.
+        run: |
+          plugin="$(python3 -c 'import json; print(json.load(open("plugins/muninn/.claude-plugin/plugin.json"))["version"])')"
+          if [ "v$plugin" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::plugins/muninn/.claude-plugin/plugin.json has version $plugin, tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Build the web app into the binary
+        run: |
+          pnpm -C web install --frozen-lockfile
+          pnpm -C web run build
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

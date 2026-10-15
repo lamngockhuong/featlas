@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign in · Acme Expense</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <div class="login">
+    <h1>Acme Expense</h1>
+    <form class="card" id="login-form" data-testid="login-form">
+      <label for="email">Email</label>
+      <input id="email" type="email" required autocomplete="username">
+      <label for="password">Password</label>
+      <input id="password" type="password" required autocomplete="current-password">
+      <p class="error" id="error" hidden>Wrong email or password.</p>
+      <button class="primary" type="submit">Sign in</button>
+    </form>
+  </div>
+  <script src="app.js"></script>
+  <script>
+    // Any @acme.test address signs in with the password "demo". approver@ addresses get the approver role.
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const ok = email.endsWith('@acme.test') && document.getElementById('password').value === 'demo';
+      document.getElementById('error').hidden = ok;
+      if (!ok) return;
+      localStorage.setItem('acme.user', email);
+      location.href = currentUser().role === 'approver' ? 'approvals.html' : 'claims.html';
+    });
+  </script>
+</body>
+</html>

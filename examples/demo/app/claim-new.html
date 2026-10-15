@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>New claim · Acme Expense</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <header></header>
+  <main>
+    <h1>New claim</h1>
+    <form class="card" id="claim-form" data-testid="claim-form">
+      <div class="form">
+        <label for="title">Title</label><input id="title" required maxlength="80">
+        <label for="amount">Amount (¥)</label><input id="amount" required inputmode="numeric" pattern="[0-9]+" placeholder="12000">
+        <label for="date">Date</label><input id="date" type="date" required>
+        <label for="category">Category</label>
+        <select id="category" required>
+          <option value="travel">Travel</option><option value="meals">Meals</option>
+          <option value="training">Training</option><option value="supplies">Supplies</option>
+        </select>
+        <label for="receipt">Receipt</label><input id="receipt" type="file" accept="image/*,application/pdf">
+      </div>
+      <div class="actions">
+        <button class="primary" type="submit" data-testid="submit-claim">Submit for approval</button>
+        <a class="button" href="claims.html">Cancel</a>
+      </div>
+    </form>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    const user = requireUser('employee');
+    renderHeader('claims');
+    // Amounts are whole yen without separators; the pattern attribute rejects "12,000".
+    document.getElementById('claim-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = 'c-' + Date.now().toString().slice(-4);
+      saveClaim({
+        id,
+        title: document.getElementById('title').value,
+        amount: Number(document.getElementById('amount').value),
+        date: document.getElementById('date').value,
+        category: document.getElementById('category').value,
+        status: 'submitted',
+        owner: user.email,
+      });
+      location.href = 'claim.html?id=' + id;
+    });
+  </script>
+</body>
+</html>

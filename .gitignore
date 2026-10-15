@@ -1,0 +1,12 @@
+plans/
+# binaries and exports
+/bin/
+/site/
+# web app output, embedded by go build (the .keep placeholder stays)
+/internal/webui/static/*
+!/internal/webui/static/.keep
+node_modules/
+# capture sidecars and browser profiles
+*.capture.json
+.muninn-profile/
+muninn/.gen.local.yaml

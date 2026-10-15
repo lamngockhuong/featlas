@@ -1,0 +1,85 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  private-terms:
+    # Real project and customer names must never reach this public repo. The
+    # list lives in a repository secret (one term per line), not in the code.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for private terms
+        env:
+          TERMS: ${{ secrets.MUNINN_FORBIDDEN_TERMS }}
+        run: |
+          if [ -z "$TERMS" ]; then echo "MUNINN_FORBIDDEN_TERMS is not set; skipping"; exit 0; fi
+          found=0
+          while IFS= read -r term; do
+            [ -z "$term" ] && continue
+            if git grep -I -i -F -q -e "$term" -- . ; then
+              echo "::error::a private term was found in the repository (term not printed)"
+              found=1
+            fi
+          done <<< "$TERMS"
+          exit $found
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v8
+      - name: Test
+        run: go test -race ./...
+      - name: Validate the demo content
+        run: go run ./cmd/muninn validate examples/demo
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: pnpm -C web install --frozen-lockfile
+      - run: pnpm -C web exec biome check .
+      - run: pnpm -C web exec tsc --noEmit
+      - run: pnpm -C web test
+      - run: pnpm -C web exec playwright install --with-deps chromium
+      - run: pnpm -C web run e2e
+
+  capture:
+    # chromedp and Playwright must agree on the demo app within 2px.
+    # pinchtab is covered when a runner provides PINCHTAB_URL.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm --prefix plugins/muninn/skills/muninn-gen/scripts install
+      - run: npx --prefix plugins/muninn/skills/muninn-gen/scripts playwright install --with-deps chromium
+      - name: Compare capture backends
+        env:
+          MUNINN_CAPTURE_E2E: "1"
+        run: go test -run TestBackendsAgree -v ./internal/capture/

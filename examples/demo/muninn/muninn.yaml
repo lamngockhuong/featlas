@@ -1,0 +1,23 @@
+muninn: 1
+project:
+  name: Acme Expense
+  summary:
+    en: "Employees submit expense claims; approvers approve them or send them back."
+    vi: "Nhân viên gửi đề nghị thanh toán chi phí; người duyệt chấp thuận hoặc trả lại."
+    ja: "社員が経費を申請し、承認者が承認または差し戻します。"
+languages: { default: en, available: [en, vi, ja] }
+repo:
+  root: ..                      # examples/demo; source paths resolve against it
+  url: https://github.com/lamngockhuong/muninn
+  branch: main
+  path: examples/demo           # where repo.root sits inside repo.url, for code links
+roles:
+  - { id: employee, label: { en: Employee, vi: Nhân viên, ja: 社員 } }
+  - { id: approver, label: { en: Approver, vi: Người duyệt, ja: 承認者 } }
+areas:
+  - { id: account, label: { en: Account, vi: Tài khoản, ja: アカウント } }
+  - { id: claims, label: { en: Claims, vi: Đề nghị thanh toán, ja: 経費申請 } }
+  - { id: approvals, label: { en: Approvals, vi: Phê duyệt, ja: 承認 } }
+owners:
+  claims: [Emma]
+  approvals: [Liam]
