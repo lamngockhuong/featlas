@@ -24,7 +24,7 @@ e2e:
 
 ## capture-e2e: compare capture backends on the demo app (needs Chrome; Node for Playwright)
 capture-e2e:
-	npm --prefix skills/muninn-gen/scripts install
+	npm --prefix plugins/muninn/skills/muninn-gen/scripts install
 	MUNINN_CAPTURE_E2E=1 go test -run TestBackendsAgree -v ./internal/capture/
 
 ## lint: go vet, golangci-lint and Biome

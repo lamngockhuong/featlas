@@ -14,7 +14,8 @@ internal/webui/        embeds the web app (static/ is written by `make web`)
 internal/cli/          cobra commands
 schema/                muninn.schema.json and capture.schema.json (the content contract)
 web/                   React app (Vite, TanStack Router and Query, Tailwind)
-skills/muninn-gen/     Claude Code skill and the Playwright and pinchtab capture scripts
+plugins/muninn/        agent plugin: skills/muninn-gen (skill, references, capture scripts)
+                       and .claude-plugin/plugin.json; .claude-plugin/marketplace.json at the root lists it
 examples/demo/         Acme Expense: a fake app (app/), its content (muninn/) and capture.yaml
 ```
 
@@ -54,9 +55,13 @@ If boxes moved, update the hotspots in the affected `screen.md` and `flow.md` fi
   notes from a real project or customer. CI checks a private list of terms kept in the
   `MUNINN_FORBIDDEN_TERMS` secret.
 - The schema is a public contract. Changes that would break existing content need a new format version.
-- Keep `skills/muninn-gen/scripts/measure.js` identical to `internal/capture/measure.js` (a test checks it).
+- Keep `plugins/muninn/skills/muninn-gen/scripts/measure.js` identical to `internal/capture/measure.js` (a test checks it).
 
 ## Releasing
+
+Set `version` in `plugins/muninn/.claude-plugin/plugin.json` to the release number first: plugin users
+only receive an update when that version changes, and the skill must match the binary it documents. The
+release workflow fails when the tag and the plugin version differ.
 
 Push a `v*` tag. The release workflow builds the web app, then goreleaser builds linux, macOS and Windows
 binaries for amd64 and arm64, with checksums, into a draft GitHub release. Publish the draft after

@@ -1,10 +1,13 @@
 {
   "name": "muninn",
-  "owner": { "name": "Lam Ngoc Khuong" },
+  "owner": {
+    "name": "Lam Ngoc Khuong"
+  },
+  "description": "Plugins for muninn, the AI-written, human-reviewed product atlas.",
   "plugins": [
     {
       "name": "muninn",
-      "source": "./",
+      "source": "./plugins/muninn",
       "description": "muninn-gen skill: write muninn content from source code and capture screens with Playwright, pinchtab or chromedp."
     }
   ]

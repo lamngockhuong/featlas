@@ -89,12 +89,12 @@ func TestMeasureScriptsIdentical(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := os.ReadFile(filepath.Join(root, "skills", "muninn-gen", "scripts", "measure.js"))
+	b, err := os.ReadFile(filepath.Join(root, "plugins", "muninn", "skills", "muninn-gen", "scripts", "measure.js"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if string(a) != string(b) {
-		t.Error("skills/muninn-gen/scripts/measure.js differs from internal/capture/measure.js")
+		t.Error("plugins/muninn/skills/muninn-gen/scripts/measure.js differs from internal/capture/measure.js")
 	}
 }
 

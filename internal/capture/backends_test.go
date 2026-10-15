@@ -61,14 +61,14 @@ func TestBackendsAgree(t *testing.T) {
 	}
 	results["chromedp"] = dir
 
-	scripts := filepath.Join(root, "skills", "muninn-gen", "scripts")
+	scripts := filepath.Join(root, "plugins", "muninn", "skills", "muninn-gen", "scripts")
 	node, nodeErr := exec.LookPath("node")
 	if _, err := os.Stat(filepath.Join(scripts, "node_modules", "playwright")); nodeErr == nil && err == nil {
 		dir := prepare("playwright")
 		runNode(t, node, filepath.Join(scripts, "capture-playwright.mjs"), dir, bin)
 		results["playwright"] = dir
 	} else {
-		t.Log("skipping Playwright: run npm install in skills/muninn-gen/scripts")
+		t.Log("skipping Playwright: run npm install in plugins/muninn/skills/muninn-gen/scripts")
 	}
 	if os.Getenv("PINCHTAB_URL") != "" && nodeErr == nil {
 		dir := prepare("pinchtab")

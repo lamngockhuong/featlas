@@ -1,6 +1,6 @@
 # Capture script for the Acme Expense demo, shared by every capture backend:
 #   muninn capture --script examples/demo/capture.yaml
-#   node skills/muninn-gen/scripts/capture-playwright.mjs examples/demo/capture.yaml
+#   node plugins/muninn/skills/muninn-gen/scripts/capture-playwright.mjs examples/demo/capture.yaml
 # Serve the app first:  python3 -m http.server 5173 -d examples/demo/app
 # The demo password is "demo":  export ACME_PASSWORD=demo
 baseUrl: http://localhost:5173

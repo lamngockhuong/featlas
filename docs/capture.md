@@ -7,8 +7,8 @@ and writes the same result file. Three backends are supported:
 | Backend | Use it when | How |
 |---|---|---|
 | chromedp | You want nothing but muninn and Chrome | `muninn capture --script capture.yaml` |
-| Playwright | The project already uses Playwright, or sign-in is complex | `node skills/muninn-gen/scripts/capture-playwright.mjs capture.yaml` |
-| pinchtab | A pinchtab server is already running | `node skills/muninn-gen/scripts/capture-pinchtab.mjs capture.yaml` |
+| Playwright | The project already uses Playwright, or sign-in is complex | `node plugins/muninn/skills/muninn-gen/scripts/capture-playwright.mjs capture.yaml` |
+| pinchtab | A pinchtab server is already running | `node plugins/muninn/skills/muninn-gen/scripts/capture-pinchtab.mjs capture.yaml` |
 
 The Node backends hand their PNG and measurements to `muninn capture-finalize`, so crop, resize, box
 conversion and WebP encoding happen in one place for all three.

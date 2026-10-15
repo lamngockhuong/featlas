@@ -55,7 +55,7 @@ Install the Claude Code plugin from this repository, then run the skill in your 
 /muninn-gen screens --role <role>
 ```
 
-See [skills/muninn-gen/SKILL.md](skills/muninn-gen/SKILL.md) for every subcommand and rule.
+See [plugins/muninn/skills/muninn-gen/SKILL.md](plugins/muninn/skills/muninn-gen/SKILL.md) for every subcommand and rule.
 
 ## Commands
 
