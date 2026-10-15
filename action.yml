@@ -1,0 +1,78 @@
+name: muninn
+description: Validate muninn content and comment on pull requests with the business pages that the change makes outdated.
+author: Lam Ngoc Khuong
+branding:
+  icon: book-open
+  color: blue
+
+inputs:
+  dir:
+    description: Content directory containing muninn.yaml.
+    default: muninn
+  version:
+    description: muninn release tag to install, or "latest".
+    default: latest
+  comment:
+    description: On pull requests, post (or update) a comment listing pages whose sources changed.
+    default: "true"
+  token:
+    description: Token used to comment on the pull request.
+    default: ${{ github.token }}
+
+outputs:
+  affected:
+    description: Number of pages whose sources the pull request changes.
+    value: ${{ steps.status.outputs.affected }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install muninn
+      shell: bash
+      env:
+        MUNINN_VERSION: ${{ inputs.version }}
+        MUNINN_INSTALL_DIR: ${{ runner.temp }}/muninn-bin
+      run: |
+        sh "${{ github.action_path }}/install.sh"
+        echo "$MUNINN_INSTALL_DIR" >> "$GITHUB_PATH"
+
+    - name: Validate
+      shell: bash
+      run: muninn validate --dir "${{ inputs.dir }}"
+
+    - name: Pages affected by this change
+      id: status
+      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+      shell: bash
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        # The base commit must exist locally; shallow checkouts lack it.
+        git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BASE_SHA"
+        muninn status --dir "${{ inputs.dir }}" --changed-since "$BASE_SHA" --format markdown > "$RUNNER_TEMP/muninn-status.md"
+        muninn status --dir "${{ inputs.dir }}" --changed-since "$BASE_SHA" --format json > "$RUNNER_TEMP/muninn-status.json"
+        affected="$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["entities"]))' "$RUNNER_TEMP/muninn-status.json")"
+        echo "affected=$affected" >> "$GITHUB_OUTPUT"
+        cat "$RUNNER_TEMP/muninn-status.md" >> "$GITHUB_STEP_SUMMARY"
+        if [ "$affected" -gt 0 ]; then
+          echo "::warning title=muninn::$affected business page(s) were written from code this change edits; ask their reviewers to re-check them."
+        fi
+
+    - name: Comment on the pull request
+      if: (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && inputs.comment == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        PR: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+        AFFECTED: ${{ steps.status.outputs.affected }}
+      run: |
+        marker='<!-- muninn-status -->'
+        # Update our earlier comment instead of adding a new one on every push.
+        existing="$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+          --jq ".[] | select(.user.type == \"Bot\" and (.body | startswith(\"$marker\"))) | .id" | head -n1)"
+        if [ -n "$existing" ]; then
+          gh api --method PATCH "repos/$REPO/issues/comments/$existing" -F body=@"$RUNNER_TEMP/muninn-status.md" > /dev/null
+        elif [ "$AFFECTED" -gt 0 ]; then
+          gh api --method POST "repos/$REPO/issues/$PR/comments" -F body=@"$RUNNER_TEMP/muninn-status.md" > /dev/null
+        fi
