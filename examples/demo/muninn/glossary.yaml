@@ -1,0 +1,14 @@
+- id: claim
+  term: { en: Expense claim, vi: Đề nghị thanh toán, ja: 経費申請 }
+  meaning:
+    en: "A request to be reimbursed for money an employee spent on company business."
+    vi: "Yêu cầu hoàn lại khoản tiền nhân viên đã chi cho công việc của công ty."
+  related: [receipt, return]
+- id: receipt
+  term: { en: Receipt, vi: Hóa đơn, ja: 領収書 }
+  meaning: { en: "Proof of payment attached to a claim. Optional in the demo, required by most real policies." }
+  related: [claim]
+- id: return
+  term: { en: Return, vi: Trả lại, ja: 差し戻し }
+  meaning: { en: "An approver sends a submitted claim back to the employee with a note saying what to fix." }
+  related: [claim]

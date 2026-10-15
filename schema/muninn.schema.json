@@ -1,0 +1,956 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lamngockhuong/muninn/schema/muninn.schema.json",
+  "title": "muninn content format, version 1",
+  "description": "Contract between content generators (AI skills, humans) and the muninn binary. Each entity kind has a definition under $defs: config (muninn.yaml), feature (features/<id>/feature.md frontmatter), screen (screens/<id>/screen.md frontmatter), flow (flows/<id>/flow.md frontmatter), module (modules/<id>.md frontmatter) and glossary (glossary.yaml). Structured data lives in YAML frontmatter; prose lives in the Markdown body. Long prose in other languages lives in sibling files named <base>.<lang>.md that contain a body only, no frontmatter. Generators must only ever write review: { status: draft }.",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case identifier, unique within its entity kind. Must equal the entity's directory name (features, screens, flows) or file name without .md (modules)."
+    },
+    "idList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true
+    },
+    "localized": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+      },
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Short text keyed by language code, for example { en: \"Claims\", ja: \"経費申請\" }. Should contain the project's default language. Do not translate on-screen labels, routes or sample values; those are written once as plain strings."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/\\\\]",
+      "description": "Path relative to the repository root (repo.root in muninn.yaml), using forward slashes, without .. segments. A path ending in / is a directory."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/path"
+      },
+      "uniqueItems": true,
+      "description": "Files or directories (ending in /) that this entity was written from. Every business claim must be backed by a file listed here. When an approved entity's sources change, muninn reports it as outdated. A directory is hashed over the files git sees in it (tracked and untracked, not ignored); without git, over its files minus the root .gitignore."
+    },
+    "shotPath": {
+      "type": "string",
+      "pattern": "^shots/[A-Za-z0-9._-]+\\.(webp|png|jpe?g)$",
+      "description": "Image path relative to the entity directory, inside its shots/ folder. Image size is read from the file; never declare it."
+    },
+    "box": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "description": "x"
+        },
+        {
+          "type": "integer",
+          "minimum": 0,
+          "description": "y"
+        },
+        {
+          "type": "integer",
+          "minimum": 1,
+          "description": "width"
+        },
+        {
+          "type": "integer",
+          "minimum": 1,
+          "description": "height"
+        }
+      ],
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "Rectangle [x, y, width, height] in pixels of the referenced image itself. Must lie inside the image."
+    },
+    "httpMethod": {
+      "type": "string",
+      "enum": [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "HEAD",
+        "OPTIONS"
+      ]
+    },
+    "review": {
+      "type": "object",
+      "description": "Review state. Generators write only { status: draft }. The values approved and changes_requested, and the fields by, at, note, contentHash and sourceHashes, are written by muninn when a person reviews on the web or with `muninn review`.",
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "approved",
+            "changes_requested"
+          ],
+          "description": "draft: written by a generator, not reviewed. approved: a person confirmed it. changes_requested: a person asked for changes, see note."
+        },
+        "by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Name the reviewer typed in."
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Review time, RFC 3339 UTC."
+        },
+        "note": {
+          "type": "string",
+          "description": "Reviewer note. For changes_requested, what must change."
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "sha256 over the entity's files at review time: main file without the review block, translation files and referenced images. A mismatch makes an approved entity modified."
+        },
+        "sourceHashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "description": "Source path to git blob SHA-1 (files) or SHA-1 of the sorted path:blob list (directories) at review time. A mismatch or a deleted source makes an approved entity outdated."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "approved"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "by",
+              "at",
+              "contentHash"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "changes_requested"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "by",
+              "at",
+              "note"
+            ]
+          }
+        }
+      ]
+    },
+    "labelled": {
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "$ref": "#/$defs/localized"
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "title": "muninn.yaml",
+      "description": "Project configuration at the root of the content directory.",
+      "required": [
+        "muninn",
+        "project",
+        "languages"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "muninn": {
+          "const": 1,
+          "description": "Content format version."
+        },
+        "project": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "summary": {
+              "$ref": "#/$defs/localized"
+            }
+          }
+        },
+        "languages": {
+          "type": "object",
+          "required": [
+            "default"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "type": "string",
+              "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+              "description": "Language of the main .md bodies."
+            },
+            "available": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+              },
+              "uniqueItems": true,
+              "description": "Languages readers can switch to. Includes the default."
+            }
+          }
+        },
+        "repo": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "root": {
+              "type": "string",
+              "description": "Repository root relative to muninn.yaml. Source paths are resolved against it. Default: ..",
+              "default": ".."
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Web URL of the repository, used for code permalinks."
+            },
+            "branch": {
+              "type": "string",
+              "description": "Branch used for code permalinks."
+            },
+            "path": {
+              "type": "string",
+              "pattern": "^[^/\\\\]",
+              "description": "Directory of repo.root inside the repository at repo.url, when they differ (for example examples/demo). Prefixed to source paths in code permalinks."
+            }
+          }
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/labelled"
+          },
+          "description": "User roles of the product."
+        },
+        "areas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/labelled"
+          },
+          "description": "Feature groups; name them after the app's menu."
+        },
+        "owners": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "description": "Default reviewers per area id."
+        }
+      }
+    },
+    "feature": {
+      "type": "object",
+      "title": "features/<id>/feature.md frontmatter",
+      "description": "A business capability. The body explains what problem it solves, the main business rules and state transitions (mermaid code blocks are rendered).",
+      "required": [
+        "id",
+        "title",
+        "area",
+        "review"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/localized"
+        },
+        "area": {
+          "$ref": "#/$defs/id",
+          "description": "Area id from muninn.yaml."
+        },
+        "roles": {
+          "$ref": "#/$defs/idList",
+          "description": "Role ids from muninn.yaml."
+        },
+        "summary": {
+          "$ref": "#/$defs/localized"
+        },
+        "screens": {
+          "$ref": "#/$defs/idList",
+          "description": "Screen ids, in the order a user meets them."
+        },
+        "flows": {
+          "$ref": "#/$defs/idList",
+          "description": "Flow ids."
+        },
+        "modules": {
+          "$ref": "#/$defs/idList",
+          "description": "Module ids."
+        },
+        "terms": {
+          "$ref": "#/$defs/idList",
+          "description": "Glossary term ids."
+        },
+        "specs": {
+          "type": "array",
+          "description": "External links: issues, specs, designs. Link to them rather than copying their content.",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        }
+      }
+    },
+    "hotspot": {
+      "type": "object",
+      "required": [
+        "n",
+        "label",
+        "box"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "n": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Callout number, unique within the variant. Linkable as #h<n>."
+        },
+        "label": {
+          "$ref": "#/$defs/localized"
+        },
+        "desc": {
+          "$ref": "#/$defs/localized",
+          "description": "What the control does or what is not obvious about it."
+        },
+        "box": {
+          "$ref": "#/$defs/box"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "control",
+            "hidden",
+            "link"
+          ],
+          "default": "control",
+          "description": "control: a visible input or button. hidden: an interaction with no visible affordance (clickable row, hover menu). link: navigates elsewhere."
+        },
+        "to": {
+          "$ref": "#/$defs/id",
+          "description": "Target screen id when activating this element opens another screen."
+        }
+      }
+    },
+    "screen": {
+      "type": "object",
+      "title": "screens/<id>/screen.md frontmatter",
+      "description": "One screen of the product with real screenshots, numbered hotspots and what is behind it. The body explains the purpose and caveats.",
+      "required": [
+        "id",
+        "title",
+        "feature",
+        "variants",
+        "review"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "ref": {
+          "type": "string",
+          "description": "External screen code from a spec, optional."
+        },
+        "title": {
+          "$ref": "#/$defs/localized"
+        },
+        "feature": {
+          "$ref": "#/$defs/id",
+          "description": "Owning feature id."
+        },
+        "route": {
+          "type": "string",
+          "description": "URL path pattern of the screen, as written in the router."
+        },
+        "roles": {
+          "$ref": "#/$defs/idList",
+          "description": "Roles that can open the screen."
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Screen states. The first variant is the default.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "label",
+              "shot"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "label": {
+                "$ref": "#/$defs/localized"
+              },
+              "shot": {
+                "$ref": "#/$defs/shotPath"
+              },
+              "hotspots": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/hotspot"
+                }
+              }
+            }
+          }
+        },
+        "fields": {
+          "type": "array",
+          "description": "On-screen labels mapped to meaning and data source.",
+          "items": {
+            "type": "object",
+            "required": [
+              "label"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Label exactly as shown on screen; not translated."
+              },
+              "meaning": {
+                "$ref": "#/$defs/localized"
+              },
+              "source": {
+                "type": "string",
+                "description": "Where the value comes from, for example table.column or an API field."
+              }
+            }
+          }
+        },
+        "api": {
+          "type": "array",
+          "description": "API calls the screen makes.",
+          "items": {
+            "type": "object",
+            "required": [
+              "method",
+              "path"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "method": {
+                "$ref": "#/$defs/httpMethod"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "note": {
+                "$ref": "#/$defs/localized"
+              }
+            }
+          }
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "description": "Database tables read or written."
+        },
+        "modules": {
+          "$ref": "#/$defs/idList",
+          "description": "Module ids."
+        },
+        "links": {
+          "type": "array",
+          "description": "Where the user can go next.",
+          "items": {
+            "type": "object",
+            "required": [
+              "to"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "to": {
+                "$ref": "#/$defs/id",
+                "description": "Target screen id."
+              },
+              "how": {
+                "$ref": "#/$defs/localized"
+              }
+            }
+          }
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "captured": {
+          "type": "object",
+          "description": "How the screenshots were taken.",
+          "additionalProperties": false,
+          "properties": {
+            "at": {
+              "type": "string",
+              "description": "Capture date or time (YYYY-MM-DD or RFC 3339)."
+            },
+            "branch": {
+              "type": "string"
+            },
+            "backend": {
+              "type": "string",
+              "enum": [
+                "playwright",
+                "pinchtab",
+                "chromedp",
+                "manual"
+              ]
+            },
+            "viewport": {
+              "type": "string",
+              "pattern": "^[0-9]+x[0-9]+$"
+            }
+          }
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        }
+      }
+    },
+    "flowStep": {
+      "type": "object",
+      "description": "One step. Exactly one of screen (reuse a screen's screenshot), shot (own screenshot) or run (terminal command). run steps have no box. type and select steps require sample.",
+      "required": [
+        "n",
+        "action",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "n": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Step number, starting at 1, consecutive."
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "click",
+            "type",
+            "select",
+            "check",
+            "upload",
+            "run",
+            "wait",
+            "result"
+          ],
+          "description": "Verb shown to the reader."
+        },
+        "label": {
+          "$ref": "#/$defs/localized"
+        },
+        "desc": {
+          "$ref": "#/$defs/localized"
+        },
+        "screen": {
+          "$ref": "#/$defs/id",
+          "description": "Screen id whose screenshot illustrates the step."
+        },
+        "variant": {
+          "$ref": "#/$defs/id",
+          "description": "Variant id of that screen. Default: its first variant."
+        },
+        "shot": {
+          "$ref": "#/$defs/shotPath"
+        },
+        "box": {
+          "$ref": "#/$defs/box",
+          "description": "Area to act on, in pixels of the step's image."
+        },
+        "sample": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Real values entered when the screenshot was taken.",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Field label as shown on screen."
+              },
+              "value": {
+                "type": "string"
+              },
+              "note": {
+                "$ref": "#/$defs/localized"
+              }
+            }
+          }
+        },
+        "run": {
+          "type": "object",
+          "required": [
+            "cmd"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "cmd": {
+              "type": "string",
+              "minLength": 1
+            },
+            "where": {
+              "$ref": "#/$defs/localized",
+              "description": "Where to run it, for example the repository root."
+            }
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "screen"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "shot"
+                ]
+              },
+              {
+                "required": [
+                  "run"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "shot"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "screen"
+                ]
+              },
+              {
+                "required": [
+                  "run"
+                ]
+              },
+              {
+                "required": [
+                  "variant"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "run"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "screen"
+                ]
+              },
+              {
+                "required": [
+                  "shot"
+                ]
+              },
+              {
+                "required": [
+                  "variant"
+                ]
+              },
+              {
+                "required": [
+                  "box"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "type",
+                  "select"
+                ]
+              }
+            },
+            "required": [
+              "action"
+            ]
+          },
+          "then": {
+            "required": [
+              "sample"
+            ]
+          }
+        }
+      ]
+    },
+    "flow": {
+      "type": "object",
+      "title": "flows/<id>/flow.md frontmatter",
+      "description": "A step-by-step task a role performs. The body is optional extra prose.",
+      "required": [
+        "id",
+        "title",
+        "feature",
+        "role",
+        "steps",
+        "review"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/localized"
+        },
+        "feature": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "$ref": "#/$defs/id",
+          "description": "Role id that performs the flow."
+        },
+        "goal": {
+          "$ref": "#/$defs/localized"
+        },
+        "start": {
+          "$ref": "#/$defs/id",
+          "description": "Screen id where the flow starts."
+        },
+        "end": {
+          "$ref": "#/$defs/id",
+          "description": "Screen id where the flow ends."
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/flowStep"
+          }
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        }
+      }
+    },
+    "module": {
+      "type": "object",
+      "title": "modules/<id>.md frontmatter",
+      "description": "A code module: backend service, frontend area, job or package. The body explains its responsibility.",
+      "required": [
+        "id",
+        "title",
+        "kind",
+        "review"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/localized"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "backend",
+            "frontend",
+            "job",
+            "package",
+            "other"
+          ]
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/path"
+          },
+          "uniqueItems": true,
+          "description": "Code locations of the module."
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "method",
+              "path"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "method": {
+                "$ref": "#/$defs/httpMethod"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "roles": {
+                "$ref": "#/$defs/idList"
+              },
+              "note": {
+                "$ref": "#/$defs/localized"
+              }
+            }
+          }
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "dependsOn": {
+          "$ref": "#/$defs/idList",
+          "description": "Module ids this module calls."
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        }
+      }
+    },
+    "glossary": {
+      "type": "array",
+      "title": "glossary.yaml",
+      "description": "Business terms.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "term",
+          "meaning"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "term": {
+            "$ref": "#/$defs/localized",
+            "description": "The term as written in each language."
+          },
+          "meaning": {
+            "$ref": "#/$defs/localized"
+          },
+          "related": {
+            "$ref": "#/$defs/idList",
+            "description": "Related term ids."
+          }
+        }
+      }
+    }
+  }
+}

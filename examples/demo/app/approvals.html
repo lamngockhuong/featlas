@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Approvals · Acme Expense</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <header></header>
+  <main>
+    <h1>Waiting for approval</h1>
+    <div id="list"></div>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    requireUser('approver');
+    renderHeader('approvals');
+    // The queue shows every submitted claim, oldest first, across all employees.
+    const claims = allClaims().filter((c) => c.status === 'submitted').sort((a, b) => a.date.localeCompare(b.date));
+    document.getElementById('list').innerHTML = claims.length === 0
+      ? '<div class="empty">Nothing to approve.</div>'
+      : `<table data-testid="approvals-table"><thead><tr><th>Employee</th><th>Title</th><th>Date</th><th>Amount</th></tr></thead><tbody>${
+          claims.map((c) => `<tr data-id="${c.id}"><td>${c.owner}</td><td>${c.title}</td><td>${c.date}</td><td>${yen(c.amount)}</td></tr>`).join('')
+        }</tbody></table>`;
+    document.querySelectorAll('tbody tr').forEach((tr) => tr.addEventListener('click', () => { location.href = 'claim.html?id=' + tr.dataset.id; }));
+  </script>
+</body>
+</html>

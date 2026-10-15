@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lamngockhuong/muninn/schema/capture.schema.json",
+  "title": "muninn capture result",
+  "description": "Output of one capture step, written by every capture backend (Playwright, pinchtab, chromedp) as <out>.capture.json next to the image. The screenshot and every element box come from the same DOM state. Boxes are in pixels of the exported image: multiplied by devicePixelRatio, offset by any crop and scaled with any resize.",
+  "type": "object",
+  "required": ["backend", "url", "viewport", "capturedAt", "shot", "elements"],
+  "additionalProperties": false,
+  "properties": {
+    "backend": { "type": "string", "enum": ["playwright", "pinchtab", "chromedp"] },
+    "url": { "type": "string", "description": "Page URL at capture time." },
+    "viewport": {
+      "type": "object",
+      "required": ["w", "h"],
+      "additionalProperties": false,
+      "properties": {
+        "w": { "type": "integer", "minimum": 1 },
+        "h": { "type": "integer", "minimum": 1 }
+      },
+      "description": "Browser viewport in CSS pixels."
+    },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "shot": {
+      "type": "string",
+      "pattern": "^[^/\\\\].*\\.(webp|png|jpe?g)$",
+      "description": "Image file, relative to the directory of this capture.json."
+    },
+    "elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "selector", "box"],
+        "additionalProperties": false,
+        "properties": {
+          "key": { "type": "string", "minLength": 1, "description": "Name given to the element in the capture script." },
+          "selector": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "description": "Visible text of the element, trimmed." },
+          "box": {
+            "type": "array",
+            "prefixItems": [
+              { "type": "integer", "minimum": 0 },
+              { "type": "integer", "minimum": 0 },
+              { "type": "integer", "minimum": 1 },
+              { "type": "integer", "minimum": 1 }
+            ],
+            "minItems": 4,
+            "maxItems": 4,
+            "description": "[x, y, width, height] in pixels of the exported image."
+          }
+        }
+      }
+    }
+  }
+}

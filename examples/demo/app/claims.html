@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>My claims · Acme Expense</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <header></header>
+  <main>
+    <h1>My claims</h1>
+    <div class="toolbar">
+      <label for="status-filter">Status</label>
+      <select id="status-filter" data-testid="status-filter">
+        <option value="">All</option>
+        <option value="submitted">Submitted</option>
+        <option value="approved">Approved</option>
+        <option value="returned">Returned</option>
+        <option value="draft">Draft</option>
+      </select>
+      <span class="spacer"></span>
+      <a class="button primary" href="claim-new.html" data-testid="new-claim">New claim</a>
+    </div>
+    <div id="list"></div>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    const user = requireUser('employee');
+    renderHeader('claims');
+    // The filter value is kept in the URL (?status=) so a filtered list can be shared.
+    const params = new URLSearchParams(location.search);
+    const filter = document.getElementById('status-filter');
+    filter.value = params.get('status') || '';
+    filter.addEventListener('change', () => {
+      location.search = filter.value ? '?status=' + filter.value : '';
+    });
+    const claims = allClaims().filter((c) => c.owner === user.email && (!filter.value || c.status === filter.value));
+    const list = document.getElementById('list');
+    if (claims.length === 0) {
+      list.innerHTML = '<div class="empty" data-testid="empty">No claims match this filter.</div>';
+    } else {
+      list.innerHTML = `<table data-testid="claims-table"><thead><tr><th>Title</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead><tbody>${
+        claims.map((c) => `<tr data-id="${c.id}"><td>${c.title}</td><td>${c.date}</td><td>${yen(c.amount)}</td><td>${badge(c.status)}</td></tr>`).join('')
+      }</tbody></table>`;
+      // Rows are the only way to open a claim; there is no separate "open" button.
+      list.querySelectorAll('tbody tr').forEach((tr) => tr.addEventListener('click', () => { location.href = 'claim.html?id=' + tr.dataset.id; }));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+# Capture script for the Acme Expense demo, shared by every capture backend:
+#   muninn capture --script examples/demo/capture.yaml
+#   node skills/muninn-gen/scripts/capture-playwright.mjs examples/demo/capture.yaml
+# Serve the app first:  python3 -m http.server 5173 -d examples/demo/app
+# The demo password is "demo":  export ACME_PASSWORD=demo
+baseUrl: http://localhost:5173
+viewport: { w: 1366, h: 768 }
+steps:
+  - goto: /login.html
+  - capture:
+      out: muninn/screens/sign-in/shots/default
+      elements:
+        email: "#email"
+        password: "#password"
+        submit: "#login-form button[type=submit]"
+
+  # Employee
+  - fill: { selector: "#email", value: "emma@acme.test" }
+  - fill: { selector: "#password", value: "${env:ACME_PASSWORD}" }
+  - click: "#login-form button[type=submit]"
+  - waitFor: { url: /claims.html }
+  - waitFor: { selector: "[data-testid=claims-table]" }
+  - capture:
+      out: muninn/screens/claim-list/shots/default
+      elements:
+        status-filter: "[data-testid=status-filter]"
+        new-claim: "[data-testid=new-claim]"
+        first-row: "[data-testid=claims-table] tbody tr:first-child"
+        nav: "header nav"
+  - goto: /claims.html?status=draft
+  - waitFor: { selector: "[data-testid=empty]" }
+  - capture:
+      out: muninn/screens/claim-list/shots/empty
+      elements:
+        status-filter: "[data-testid=status-filter]"
+        empty: "[data-testid=empty]"
+  - goto: /claim.html?id=c-1003
+  - waitFor: { selector: "[data-testid=claim-details]" }
+  - capture:
+      out: muninn/screens/claim-detail/shots/returned
+      elements:
+        details: "[data-testid=claim-details]"
+        status: "[data-testid=claim-details] .badge"
+        note: "[data-testid=claim-details] dd:last-of-type"
+  - goto: /claim-new.html
+  - waitFor: { selector: "[data-testid=claim-form]" }
+  - capture:
+      out: muninn/screens/claim-form/shots/default
+      elements:
+        title: "#title"
+        amount: "#amount"
+        date: "#date"
+        category: "#category"
+        receipt: "#receipt"
+        submit: "[data-testid=submit-claim]"
+  - fill: { selector: "#title", value: "Client dinner" }
+  - fill: { selector: "#amount", value: "12000" }
+  - fill: { selector: "#date", value: "2026-10-12" }
+  - select: { selector: "#category", value: "meals" }
+  - capture:
+      out: muninn/flows/submit-claim/shots/step-2
+      elements:
+        fields: "[data-testid=claim-form] .form"
+        submit: "[data-testid=submit-claim]"
+  - click: "[data-testid=submit-claim]"
+  - waitFor: { url: /claim.html }
+  - waitFor: { selector: "[data-testid=claim-details]" }
+  - capture:
+      out: muninn/flows/submit-claim/shots/step-4
+      elements:
+        status: "[data-testid=claim-details] .badge"
+
+  # Approver
+  - click: "#sign-out"
+  - waitFor: { selector: "#login-form" }
+  - fill: { selector: "#email", value: "approver@acme.test" }
+  - fill: { selector: "#password", value: "${env:ACME_PASSWORD}" }
+  - click: "#login-form button[type=submit]"
+  - waitFor: { url: /approvals.html }
+  - waitFor: { selector: "[data-testid=approvals-table]" }
+  - capture:
+      out: muninn/screens/approval-queue/shots/default
+      elements:
+        table: "[data-testid=approvals-table]"
+        first-row: "[data-testid=approvals-table] tbody tr:first-child"
+  - goto: /claim.html?id=c-1001
+  - waitFor: { selector: "[data-testid=approve]" }
+  - capture:
+      out: muninn/screens/claim-detail/shots/approver
+      elements:
+        details: "[data-testid=claim-details]"
+        approve: "[data-testid=approve]"
+        return: "[data-testid=return]"
