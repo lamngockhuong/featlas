@@ -1,0 +1,11 @@
+{
+  "name": "muninn",
+  "owner": { "name": "Lam Ngoc Khuong" },
+  "plugins": [
+    {
+      "name": "muninn",
+      "source": "./",
+      "description": "muninn-gen skill: write muninn content from source code and capture screens with Playwright, pinchtab or chromedp."
+    }
+  ]
+}
